@@ -17,12 +17,18 @@
     <div class="container-fluid">
         <form>
             <div class="form-group row mt-5">
-                <label for="question_type" class="col-sm-2 col-form-label"><strong>Select question type:</strong> </label>
-                <div class="col-sm-3">
+                <label for="question_type" class="col-sm-2 col-form-label"><strong>Select question type:</strong>
+                </label>
+                <div class="col-sm-4">
                     <select class="form-control" id="question_type" ng-change="onQuesSel()"
                         ng-options="item as item.text for item in qustionList track by item.id" ng-model="selected">
                         <option value="">Please select question type...</option>
                     </select>
+                </div>
+                <div class="col-1">
+                    <div class="spinner-border text-primary" role="status" data-loading>
+                        <span class="sr-only">Loading...</span>
+                    </div>
                 </div>
             </div>
         </form>
@@ -31,8 +37,20 @@
                 <h5>{{selected.text}}</h5>
             </div>
             <ul class="list-group list-group-flush">
-                <li class="list-group-item" ng-repeat="x in quesList">{{$index+1 + '. '+ x.keywords}}
-                    <b ng-if='selected.quesType === 35'>{{x.answers[0].anstext}}</b></li>
+                <li class="list-group-item" ng-repeat="x in quesList" ng-if="selected.quesType !== 'cQuestionList'">
+                    {{$index+1 + '. '+ x.keywords}}
+                    <b ng-if='selected.quesTypeId === 35'>{{x.answers[0].anstext}}</b>
+                    <b ng-if='selected.quesTypeId === 13' ng-repeat='y in x.answers'>{{y.anstext +', '}} </b>
+                </li>
+                <li class="list-group-item" ng-repeat="x in quesList" ng-if="selected.quesType === 'cQuestionList'">
+                    <div>
+                        {{$index+1 + '. '+ x.keywords}}
+                        <button type='button' class='btn btn-sm btn-outline-success ml-1'
+                            ng-click='x.display=!x.display'>{{x.display ? 'Hide Answers': 'Show Answers'}}</button>
+                    </div>
+                    <div compile='x.qtext'></div>
+                    <b ng-if="selected.quesTypeId ===24" ng-repeat='y in x.answers'>{{y.anstext +', '}} </b>
+                </li>
             </ul>
         </div>
     </div>
@@ -48,41 +66,99 @@
         integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
         crossorigin="anonymous"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular-sanitize.js"></script>
     <script>
-        var app = angular.module('myApp', []);
-        app.controller('myCtrl', ['$scope', 'appService', function ($scope, appService) {
+        var app = angular.module('myApp', ['ngSanitize']);
+        app.controller('myCtrl', ['$scope', '$sce', 'appService', function ($scope, $sce, appService) {
             $scope.qustionList = [{
                 id: 1,
                 text: 'Repeat Sentence',
-                quesType: 32
+                quesTypeId: 32,
+                quesType: 'getQTypeList'
             }, {
                 id: 2,
                 text: 'Answer Short Question',
-                quesType: 35
+                quesTypeId: 35,
+                quesType: 'getQTypeList'
             }, {
                 id: 3,
                 text: 'Write From Dictation',
-                quesType: 18
+                quesTypeId: 18,
+                quesType: 'getQTypeList'
+            }, {
+                id: 4,
+                text: 'Fill in the blanks',
+                quesTypeId: 13,
+                quesType: 'getQTypeList'
+            }, {
+                id: 5,
+                text: 'Reading-Fill in the blanks',
+                quesTypeId: 24,
+                quesType: 'cQuestionList'
+            }, {
+                id: 6,
+                text: 'Reading and writing-Fill in the blanks',
+                quesTypeId: 25,
+                quesType: 'cQuestionList'
             }];
             $scope.onQuesSel = function () {
-                if ($scope.selected.quesType) {
-                    appService.getQuesData($scope.selected.quesType).then(function (res) {
-                        $scope.quesList = res.data.data.sort(function (a, b) {
-                            return (b.keywords.trim().length - a.keywords.trim().length);
-                        });
+                $scope.quesList = null;
+                if ($scope.selected) {
+                    appService.getQuesData($scope.selected).then(function (res) {
+                        if ($scope.selected.quesType !== 'cQuestionList') {
+                            $scope.quesList = res.data.data.sort(function (a, b) {
+                                return (b.keywords.trim().length - a.keywords.trim().length);
+                            });
+                        } else {
+                            $scope.quesList = res.data.data;
+                        }
                     })
                 }
 
             };
 
         }]);
+        app.directive('compile', ['$compile', function ($compile) {
+            return function (scope, element, attrs) {
+                scope.$watch(
+                    function (scope) {
+                        return scope.$eval(attrs.compile);
+                    },
+                    function (value) {
+                        value = value.replace(/style='display:none'/g, "ng-if='x.display'");
+                        value = value.replace(/ranswer/g, 'bg-success text-warning p1');
+                        element.html(value);
+                        $compile(element.contents())(scope);
+                    }
+                )
+            };
+        }])
+        app.directive('loading', ['$http', function ($http) {
+            return {
+                restrict: 'A',
+                link: function (scope, elm, attrs) {
+                    scope.isLoading = function () {
+                        return $http.pendingRequests.length > 0;
+                    };
+
+                    scope.$watch(scope.isLoading, function (v) {
+                        if (v) {
+                            elm.show();
+                        } else {
+                            elm.hide();
+                        }
+                    });
+                }
+            };
+
+        }]);
         app.service('appService', ['$http', function ($http) {
-            this.getQuesData = function (quesType) {
+            this.getQuesData = function (selQuesType) {
                 return $http({
                     async: true,
                     crossDomain: true,
                     method: 'POST',
-                    url: "https://realpte.com/api/question/questionRes.php?handle=getQTypeList",
+                    url: "https://realpte.com/api/question/questionRes.php?handle=" + selQuesType.quesType,
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                         "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJkYXRhIjp7InVzZXJpZCI6NzAxODYsInVzZXJuYW1lIjoiTGF4bWk1MzAiLCJ0cnVlbmFtZSI6IkxheG1pIiwidXNlcl9lbWFpbCI6ImxheG1pbnM1MzBAZ21haWwuY29tIiwicm9sZV9pZHMiOiIzLDciLCJhdmF0YXIiOiJcL2ltYWdlc1wvYm95YXZhdGFyLnBuZyIsImFjdGl2ZSI6MSwidmlwX2V4cGlyZSI6bnVsbCwibWFya19ub3RlcyI6MCwic2Vzc2lvbmlkIjoiazVpcjN1azA4bmpiaXA5cmZ1bWJtc2d2ZHAifX0.5TNxK2NQWkmEBRz-opx-8SRguCKGz29ShNeNNoz2QYU",
@@ -102,7 +178,7 @@
                         "qcate": 2,
                         "qincomp": -1,
                         "sort": 0,
-                        "type": quesType
+                        "type": selQuesType.quesTypeId
                     }
                 });
             }
