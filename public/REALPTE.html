@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+    <title>REALPTE</title>
+</head>
+
+<body ng-app="myApp" ng-controller="myCtrl">
+    <div class="container-fluid">
+        <div class="card">
+            <div class="row">
+                <div class="col">
+                    <div class="form-group">
+                        <label for="question_type">Select list:</label>
+                        <select class="form-control" id="question_type">
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="card">
+            <div class="card-header text-center">
+                <h5>Answer Short Questions</h5>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item" ng-repeat="x in json.data">{{$index+1 + '. '+ x.keywords}}
+                    <b>{{x.answers[0].anstext}}</b></li>
+            </ul>
+        </div>
+    </div>
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+        crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+    <script>
+        var app = angular.module('myApp', []);
+        app.controller('myCtrl', function ($scope) {
+            $scope.qustionList = [{
+                id: 1,
+                text: 'Repeat Sentence',
+                quesType: 35
+            }, {
+                id: 2,
+                text: 'Answer Short Question',
+            }];
+            $scope.json.data = $scope.json.data.sort(function (a, b) {
+
+                return (b.keywords.trim().length - a.keywords.trim().length);
+            });
+        });
+        app.service('appService', [function ($http) {
+            this.getQuesData = function (quesType) {
+                return $http({
+                    async: true,
+                    crossDomain: true,
+                    method: 'POST',
+                    url: "https://realpte.com/api/question/questionRes.php?handle=getQTypeList",
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJkYXRhIjp7InVzZXJpZCI6NzAxODYsInVzZXJuYW1lIjoiTGF4bWk1MzAiLCJ0cnVlbmFtZSI6IkxheG1pIiwidXNlcl9lbWFpbCI6ImxheG1pbnM1MzBAZ21haWwuY29tIiwicm9sZV9pZHMiOiIzLDciLCJhdmF0YXIiOiJcL2ltYWdlc1wvYm95YXZhdGFyLnBuZyIsImFjdGl2ZSI6MSwidmlwX2V4cGlyZSI6bnVsbCwibWFya19ub3RlcyI6MCwic2Vzc2lvbmlkIjoiazVpcjN1azA4bmpiaXA5cmZ1bWJtc2d2ZHAifX0.5TNxK2NQWkmEBRz-opx-8SRguCKGz29ShNeNNoz2QYU",
+                    },
+                    transformRequest: function (obj) {
+                        var str = [];
+                        for (var p in obj)
+                            str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
+                        return str.join("&");
+                    },
+                    data: {
+                        "always": 0,
+                        "currentPage": 1,
+                        "imageType": 0,
+                        "noanswer": -1,
+                        "pageSize": 3000,
+                        "qcate": 2,
+                        "qincomp": -1,
+                        "sort": 0,
+                        "type": quesType
+                    }
+                });
+            }
+
+        }]);
+    </script>
+</body>
+
+</html>
