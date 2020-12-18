@@ -17,8 +17,8 @@
     <div class="container-fluid">
         <form>
             <div class="form-group row mt-5">
-                <label for="question_type" class="col-sm-3 col-form-label">Please select question type</label>
-                <div class="col-sm-6">
+                <label for="question_type" class="col-sm-2 col-form-label"><strong>Select question type:</strong> </label>
+                <div class="col-sm-3">
                     <select class="form-control" id="question_type" ng-change="onQuesSel()"
                         ng-options="item as item.text for item in qustionList track by item.id" ng-model="selected">
                         <option value="">Please select question type...</option>
