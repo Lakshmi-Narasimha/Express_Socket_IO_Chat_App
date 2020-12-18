@@ -15,25 +15,24 @@
 
 <body ng-app="myApp" ng-controller="myCtrl">
     <div class="container-fluid">
-        <div class="card">
-            <div class="row">
-                <div class="col">
-                    <div class="form-group">
-                        <label for="question_type">Select list:</label>
-                        <select class="form-control" id="question_type">
-                        </select>
-                    </div>
+        <form>
+            <div class="form-group row mt-5">
+                <label for="question_type" class="col-sm-3 col-form-label">Please select question type</label>
+                <div class="col-sm-6">
+                    <select class="form-control" id="question_type" ng-change="onQuesSel()"
+                        ng-options="item as item.text for item in qustionList track by item.id" ng-model="selected">
+                        <option value="">Please select question type...</option>
+                    </select>
                 </div>
             </div>
-
-        </div>
-        <div class="card">
+        </form>
+        <div class="card mt-3">
             <div class="card-header text-center">
-                <h5>Answer Short Questions</h5>
+                <h5>{{selected.text}}</h5>
             </div>
             <ul class="list-group list-group-flush">
-                <li class="list-group-item" ng-repeat="x in json.data">{{$index+1 + '. '+ x.keywords}}
-                    <b>{{x.answers[0].anstext}}</b></li>
+                <li class="list-group-item" ng-repeat="x in quesList">{{$index+1 + '. '+ x.keywords}}
+                    <b ng-if='selected.quesType === 35'>{{x.answers[0].anstext}}</b></li>
             </ul>
         </div>
     </div>
@@ -51,21 +50,33 @@
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
     <script>
         var app = angular.module('myApp', []);
-        app.controller('myCtrl', function ($scope) {
+        app.controller('myCtrl', ['$scope', 'appService', function ($scope, appService) {
             $scope.qustionList = [{
                 id: 1,
                 text: 'Repeat Sentence',
-                quesType: 35
+                quesType: 32
             }, {
                 id: 2,
                 text: 'Answer Short Question',
+                quesType: 35
+            }, {
+                id: 3,
+                text: 'Write From Dictation',
+                quesType: 18
             }];
-            $scope.json.data = $scope.json.data.sort(function (a, b) {
+            $scope.onQuesSel = function () {
+                if ($scope.selected.quesType) {
+                    appService.getQuesData($scope.selected.quesType).then(function (res) {
+                        $scope.quesList = res.data.data.sort(function (a, b) {
+                            return (b.keywords.trim().length - a.keywords.trim().length);
+                        });
+                    })
+                }
 
-                return (b.keywords.trim().length - a.keywords.trim().length);
-            });
-        });
-        app.service('appService', [function ($http) {
+            };
+
+        }]);
+        app.service('appService', ['$http', function ($http) {
             this.getQuesData = function (quesType) {
                 return $http({
                     async: true,
