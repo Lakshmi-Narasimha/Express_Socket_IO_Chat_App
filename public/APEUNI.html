@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
         integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
-    <title>REALPTE</title>
+    <title>APEUNI</title>
 </head>
 
 <body ng-app="myApp" ng-controller="myCtrl">
@@ -37,12 +37,11 @@
                 <h5>{{selected.text}}</h5>
             </div>
             <ul class="list-group list-group-flush">
-                <li class="list-group-item" ng-repeat="x in quesList" ng-if="selected.quesType !== 'cQuestionList'">
-                    {{$index+1 + '. '+ x.keywords}}
-                    <b ng-if='selected.quesTypeId === 35'>{{x.answers[0].anstext}}</b>
-                    <b ng-if='selected.quesTypeId === 13' ng-repeat='y in x.answers'>{{y.anstext +', '}} </b>
+                <li class="list-group-item" ng-repeat="x in quesList">
+                    {{!x.choices ? ($index+1 + '. '+ x.text): x.name}}
+                    <b ng-repeat='y in x.choices'>{{y.truth +', '}} </b>
                 </li>
-                <li class="list-group-item" ng-repeat="x in quesList" ng-if="selected.quesType === 'cQuestionList'">
+                <!-- <li class="list-group-item" ng-repeat="x in quesList" ng-if="selected.quesType === 'cQuestionList'">
                     <div>
                         {{$index+1 + '. '+ x.keywords}}
                         <button type='button' class='btn btn-sm btn-outline-success ml-1'
@@ -50,7 +49,7 @@
                     </div>
                     <div compile='x.qtext'></div>
                     <b ng-if="selected.quesTypeId ===24" ng-repeat='y in x.answers'>{{y.anstext +', '}} </b>
-                </li>
+                </li> -->
             </ul>
         </div>
     </div>
@@ -65,6 +64,7 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
         integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
         crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-base64@3.6.0/base64.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular-sanitize.js"></script>
     <script>
@@ -73,49 +73,91 @@
             $scope.qustionList = [{
                 id: 1,
                 text: 'Repeat Sentence',
-                quesTypeId: 32,
-                quesType: 'getQTypeList'
+                quesTypeId: 1066,
+                quesType: 'repeat_sentences'
             }, {
                 id: 2,
                 text: 'Answer Short Question',
-                quesTypeId: 35,
-                quesType: 'getQTypeList'
+                quesTypeId: 706,
+                quesType: 'answer_questions'
             }, {
                 id: 3,
                 text: 'Write From Dictation',
-                quesTypeId: 18,
-                quesType: 'getQTypeList'
+                quesTypeId: 1490,
+                quesType: 'wfds'
             }, {
                 id: 4,
                 text: 'Fill in the blanks',
-                quesTypeId: 13,
-                quesType: 'getQTypeList'
-            }, {
-                id: 5,
-                text: 'Reading-Fill in the blanks',
-                quesTypeId: 24,
-                quesType: 'cQuestionList'
-            }, {
-                id: 6,
-                text: 'Reading and writing-Fill in the blanks',
-                quesTypeId: 25,
-                quesType: 'cQuestionList'
+                quesTypeId: 125,
+                quesType: 'l_fib'
             }];
+            // {
+            //     id: 5,
+            //     text: 'Reading-Fill in the blanks',
+            //     quesTypeId: 24,
+            //     quesType: 'cQuestionList'
+            // }, {
+            //     id: 6,
+            //     text: 'Reading and writing-Fill in the blanks',
+            //     quesTypeId: 25,
+            //     quesType: 'cQuestionList'
+            // }];
+            $scope.quesList = [];
+            $scope.quesInterval = null;
             $scope.onQuesSel = function () {
-                $scope.quesList = null;
+                $scope.quesList = [];
+                $scope.quesInterval ? clearInterval($scope.quesInterval) : null;
+                var i = 1;
                 if ($scope.selected) {
-                    appService.getQuesData($scope.selected).then(function (res) {
-                        if ($scope.selected.quesType !== 'cQuestionList') {
-                            $scope.quesList = res.data.data.sort(function (a, b) {
-                                return (b.keywords.trim().length - a.keywords.trim().length);
-                            });
-                        } else {
-                            $scope.quesList = res.data.data;
+                    $scope.quesInterval = setInterval(function () {
+                        if (i > $scope.selected.quesTypeId) {
+                            clearInterval($scope.quesInterval)
+                            return true;
                         }
-                    })
+
+                        (function () {
+                            appService.getQuesData($scope.selected, i++).then(function (res) {
+                                t(res.data.data.item)
+                            })
+                        })(i)
+                    }, 500);
+
                 }
 
             };
+            var decript = function i(e) {
+                for (var t = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : o.b, n = {}, i = "", a = t.substring(0, 31).split(""), u = t.substring(31, 62).split(""), c = 0; c < 31; c++)
+                    n[a[c]] = u[c],
+                        n[u[c]] = a[c];
+                e.split("").forEach(function (e) {
+                    i += n[e] || e
+                });
+                var s = Base64.Base64.decode(i);
+                jsn = JSON.parse(s);
+                if (jsn.labels[0].label === "Exam Q" || (jsn.labels[1] && jsn.labels[1].label === "Exam Q") || (jsn.labels[2] && jsn.labels[2].label === "Exam Q")) {
+                    $scope.quesList.push({
+                        name: jsn.name,
+                        choices: jsn.choices,
+                        text: jsn.original_text
+                    });
+                    if ($scope.selected.quesType !== 'l_fib') {
+                        $scope.quesList.sort(function (a, b) {
+                            return (b.text.trim().length - a.text.trim().length);
+                        });
+                    }
+
+                }
+
+            }
+            var a = function (e) {
+                var t = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : o.b;
+                return "string" == typeof e ? decript(e, t) : e
+            }
+
+            var t = function (e) {
+                return Object(a)(e, "ts3RqNgVd0cAMKUlSQOzh7oyZvPB96EXGbCLiwFWDm48ku2jefJT5YanIH1rpx")
+            }
+
 
         }]);
         app.directive('compile', ['$compile', function ($compile) {
@@ -153,32 +195,14 @@
 
         }]);
         app.service('appService', ['$http', function ($http) {
-            this.getQuesData = function (selQuesType) {
+            this.getQuesData = function (selQuesType, num) {
                 return $http({
-                    async: true,
+                    async: false,
                     crossDomain: true,
-                    method: 'POST',
-                    url: "https://realpte.com/api/question/questionRes.php?handle=" + selQuesType.quesType,
+                    method: 'GET',
+                    url: "https://api.apeuni.com/api/v1/questions/single_num_v2?user_detail=alienvinoth%40gmail.com&token=sGX_yF7N9h8Z2mEf9DyAvmxdxrksCsdaD3PfDyxw&acc_type=email&client=ANxz4r22jQ&api_type=e1&locale=en&device_type=web-1.0.0-Chrome-Chrome+87.0.4280.88+on+OS+X+11.1.0+64-bit&device_id=3-2078184d-5fbc-4c0d-b0b9-06fffe8a9419&first_visit_time=1608454624&logged_in=true&data_version=2&filter=%5B%5D&tag=exam_q&order_method=updated_at&req_type=current&model=" + selQuesType.quesType + "&num=" + num,
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
-                        "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJkYXRhIjp7InVzZXJpZCI6NzAxODYsInVzZXJuYW1lIjoiTGF4bWk1MzAiLCJ0cnVlbmFtZSI6IkxheG1pIiwidXNlcl9lbWFpbCI6ImxheG1pbnM1MzBAZ21haWwuY29tIiwicm9sZV9pZHMiOiIzLDciLCJhdmF0YXIiOiJcL2ltYWdlc1wvYm95YXZhdGFyLnBuZyIsImFjdGl2ZSI6MSwidmlwX2V4cGlyZSI6bnVsbCwibWFya19ub3RlcyI6MCwic2Vzc2lvbmlkIjoicjJjN3BiZGs2M2U5a2c3Mm4xa25kcjBsamoifX0.Ispkg692R9U_msnEf4VYdTCQM2iyDfZn3LYw7z_PNWI",
-                    },
-                    transformRequest: function (obj) {
-                        var str = [];
-                        for (var p in obj)
-                            str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
-                        return str.join("&");
-                    },
-                    data: {
-                        "always": 0,
-                        "currentPage": 1,
-                        "imageType": 0,
-                        "noanswer": -1,
-                        "pageSize": 3000,
-                        "qcate": 2,
-                        "qincomp": -1,
-                        "sort": 0,
-                        "type": selQuesType.quesTypeId
                     }
                 });
             }
